@@ -76,7 +76,6 @@ const SignupValidation = (signupInput) => {
     const roleValidationResult = roleSchemas[signupInput.user.role].safeParse(signupInput.roleDetails);
     
     if(userValidationResult.success && roleValidationResult.success){
-      console.log(userValidationResult.data,roleValidationResult.data);
       
       return({
         success:true,
@@ -127,4 +126,34 @@ const SignupValidation = (signupInput) => {
   }
 };
 
-module.exports = SignupValidation;
+const signinSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6,"enter a valid password")
+});
+
+const SigninValidation = (signinInput) =>{
+  try {
+    const validationResult = signinSchema.safeParse(signinInput);
+
+    if(validationResult.success){
+      return({
+        success:true,
+        msg:validationResult.data
+      });
+    }
+    else{
+      return({
+        success:false,
+        msg:validationResult.error
+      });
+    }
+  } catch (err) {
+    console.error("Unexpected error:",err);
+    return(err);
+  }
+}
+
+module.exports = {
+  SignupValidation,
+  SigninValidation
+};

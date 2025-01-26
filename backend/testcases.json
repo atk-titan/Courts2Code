@@ -1,0 +1,93 @@
+{
+  "testCases": [
+    {
+      "role": "police",
+      "input": {
+        "user": {
+          "name": "John Doe",
+          "email": "police.john@example.com",
+          "password": "securePassword1!",
+          "role": "police",
+          "status": "Pending"
+        },
+        "roleDetails": {
+          "badgeNumber": "PN12345",
+          "department": "Cyber Crime",
+          "stationAddress": "123 Main St, Mumbai",
+          "identityProof": "/uploads/police_identity.pdf"
+        }
+      }
+    },
+    {
+      "role": "bailiff",
+      "input": {
+        "user": {
+          "name": "Jane Smith",
+          "email": "bailiff.jane@example.com",
+          "password": "securePassword1!",
+          "role": "bailiff",
+          "status": "Pending"
+        },
+        "roleDetails": {
+          "badgeNumber": "BN67890",
+          "courtName": "Mumbai High Court",
+          "identityProof": "/uploads/bailiff_identity.pdf"
+        }
+      }
+    },
+    {
+      "role": "judge",
+      "input": {
+        "user": {
+          "name": "Judge Brown",
+          "email": "judge.brown@example.com",
+          "password": "securePassword1!",
+          "role": "judge",
+          "status": "Pending"
+        },
+        "roleDetails": {
+          "judgeId": "JID123",
+          "courtName": "Supreme Court",
+          "designation": "Chief Justice",
+          "validTill": "2026-01-01",
+          "identityProof": "/uploads/judge_identity.pdf"
+        }
+      }
+    },
+    {
+      "role": "lawyer",
+      "input": {
+        "user": {
+          "name": "Advocate Sharma",
+          "email": "lawyer.sharma@example.com",
+          "password": "securePassword1!",
+          "role": "lawyer",
+          "status": "Pending"
+        },
+        "roleDetails": {
+          "barCertificate": "/uploads/bar_certificate.pdf",
+          "specialization": "Criminal Law",
+          "validTill": "2026-06-01",
+          "identityProof": "/uploads/lawyer_identity.pdf"
+        }
+      }
+    },
+    {
+      "role": "forensic_expert",
+      "input": {
+        "user": {
+          "name": "Dr. Watson",
+          "email": "forensic.watson@example.com",
+          "password": "securePassword1!",
+          "role": "forensic_expert",
+          "status": "Pending"
+        },
+        "roleDetails": {
+          "qualification": "PhD in Forensic Science",
+          "areaOfExpertise": "DNA Analysis",
+          "identityProof": "/uploads/forensic_identity.pdf"
+        }
+      }
+    }
+  ]
+}
