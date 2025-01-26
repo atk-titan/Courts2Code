@@ -71,42 +71,59 @@ const roleSchemas = {
 
 // Example test case
 const SignupValidation = (signupInput) => {
-  // const signupInput = {
-  //   user: {
-  //     name: "John Doe",
-  //     email: "john.doe@example.com",
-  //     password: "",
-  //     role: "lawyer", // Determines which schema to validate
-  //     status: "Pending",
-  //   },
-  //   roleDetails: {
-  //     barCertificate: "/uploads/bar_certificate.pdf",
-  //     specialization: "Criminal Law",
-  //     validTill: "",
-  //     identityProof: "/uploads/identity_proof.pdf",
-  //   },
-  // };
-
   try {
     const userValidationResult = registerUser.safeParse(signupInput.user);
     const roleValidationResult = roleSchemas[signupInput.user.role].safeParse(signupInput.roleDetails);
     
     if(userValidationResult.success && roleValidationResult.success){
       console.log(userValidationResult.data,roleValidationResult.data);
+      
+      return({
+        success:true,
+        msg:{
+          user: userValidationResult.data,
+          role: roleValidationResult.data
+        }
+      });
+
     }else{
       if((!userValidationResult.success) && (!roleValidationResult.success)){
-        console.log("user error"+userValidationResult.error+"\nrole error"+roleValidationResult.error);
+
+        return({
+          success:false,
+          msg:{
+            user: userValidationResult.error,
+            role: roleValidationResult.error
+          }
+        });
+
       }
       else if(!userValidationResult.success){
-        console.log("user error"+userValidationResult.error);
+
+        return({
+          success:false,
+          msg:{
+            user: userValidationResult.error,
+            role: roleValidationResult.data
+          }
+        });
+
       }
       else{
-        console.log("role error"+roleValidationResult.error);
+
+        return({
+          success:false,
+          msg:{
+            user: userValidationResult.data,
+            role: roleValidationResult.error
+          }
+        });
       }
     }
 
   } catch (err) {
     console.error("Unexpected error:", err);
+    return(err);
   }
 };
 
