@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 // MongoDB connection
 mongoose
-  .connect("mongodb+srv://gmane8451:UIWBU3boNS4FIvBm@cluster0.feaga.mongodb.net/Courts2Code", {
+  .connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -59,6 +59,7 @@ const judgeSchema = new mongoose.Schema(
     judgeId: { type: String, required: true, unique: true },
     courtName: { type: String, required: true },
     designation: { type: String, required: true },
+    validTill: { type: Date, required: true},
     identityProof: { type: String, required: true }, // Path to the uploaded file
   },
   { timestamps: true }
@@ -70,7 +71,7 @@ const lawyerSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     barCertificate: { type: String, required: true }, // Path to the uploaded bar certificate file
     specialization: { type: String, required: true },
-    lawFirm: { type: String }, // Optional
+    validTill: { type: Date, required: true},
     identityProof: { type: String, required: true }, // Path to the uploaded file
   },
   { timestamps: true }
@@ -82,7 +83,6 @@ const forensicExpertSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     qualification: { type: String, required: true },
     areaOfExpertise: { type: String, required: true },
-    workExperience: { type: Number, required: true },
     identityProof: { type: String, required: true }, // Path to the uploaded file
   },
   { timestamps: true }
