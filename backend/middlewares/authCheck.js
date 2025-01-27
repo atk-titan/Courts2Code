@@ -1,4 +1,7 @@
 const { User, Police, Bailiff, Judge, Lawyer, ForensicExpert} = require("../mongo.js");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const roles = {
     police: Police,
@@ -9,7 +12,11 @@ const roles = {
   };
 
 const createUser = async (data)=>{
-    try {        
+    try {  
+        //password hashing
+        data.user.password = await bcrypt.hash(data.user.password, 10);
+        
+        //user creation
         const user = await User.create(data.user);
         data.roleDetails.userId=user._id;
         console.log(user);
@@ -32,7 +39,11 @@ const userSignin = async (data) =>{
         const user = await User.findOne({
             email:data.email
         });
-        if(user.password===data.password){
+
+        const isPasswordValid = await bcrypt.compare(data.password, user.password);
+        console.log(isPasswordValid);
+
+        if(isPasswordValid){
             const token = jwt.sign(
                 { id: user._id, role: user.role },
                 process.env.JWT_SECRET, // Use a secure secret key from environment variables
@@ -52,7 +63,19 @@ const userSignin = async (data) =>{
     }
 }
 
+const verifyJWT =(req,res,next)=>{
+    try {
+        jwt.verify(req.headers.authorization,process.env.JWT_SECRET);
+        next();
+    } catch (error) {
+        console.error("error while finding the user"+error);
+        
+        return { success: false, msg: error.message };
+    }
+}
+
 module.exports={
     createUser,
-    userSignin
+    userSignin,
+    verifyJWT
 };

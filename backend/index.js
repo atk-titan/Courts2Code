@@ -1,6 +1,6 @@
 const express = require( 'express' );
 const {SignupValidation , SigninValidation} = require('./middlewares/inputValidation'); // Adjust path as needed
-const { createUser } = require('./middlewares/authCheck');
+const { createUser , userSignin , verifyJWT } = require('./middlewares/authCheck');
 
 const PORT=3000;
 
@@ -69,6 +69,10 @@ app.put("/forget",(req,res)=>{
 });
 
 app.get("/admin",(req,res)=>{
+    //for accessing the entire dataset
+});
+
+app.put("/admin",(req,res)=>{
 
 });
 
