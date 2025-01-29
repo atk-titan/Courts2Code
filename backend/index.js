@@ -68,11 +68,11 @@ app.put("/forget",(req,res)=>{
 
 });
 
-app.get("/admin",(req,res)=>{
+app.get("/bailif",(req,res)=>{
     //for accessing the entire dataset
 });
 
-app.put("/admin",(req,res)=>{
+app.put("/bailiff",(req,res)=>{
 
 });
 

@@ -69,6 +69,7 @@ const lawyerSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     barCertificate: { type: String, required: true }, // Path to the uploaded bar certificate file
     specialization: { type: String, required: true },
+    ongoingCases: { type: [String], default: [] , required: true },
     validTill: { type: Date, required: true},
     identityProof: { type: String, required: true }, // Path to the uploaded file
   },
