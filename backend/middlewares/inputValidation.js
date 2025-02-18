@@ -50,6 +50,7 @@ const judgeSchemaValidation = z.object({
 const lawyerSchemaValidation = z.object({
   barCertificate: z.string().min(1, "Bar Certificate is required"),
   specialization: z.string().min(1, "Specialization is required"),
+  ongoingCases: z.array(z.string()).optional().default([]),
   validTill: z.preprocess((arg) => (arg ? new Date(arg) : undefined), z.date().refine((date) => date > new Date(), "Valid Till must be a future date")),
   identityProof: z.string().min(1, "Identity Proof is required"),
 });

@@ -1,6 +1,7 @@
 const express = require( 'express' );
 const {SignupValidation , SigninValidation} = require('./middlewares/inputValidation'); // Adjust path as needed
 const { createUser , userSignin , verifyJWT } = require('./middlewares/authCheck');
+const { user } = require('./routes/user');
 
 const PORT=3000;
 
@@ -43,7 +44,7 @@ const validateInput= async (req,res,next)=>{
 }
 
 app.post("/register",validateInput,(req,res)=>{
-    res.status(200).send("user created");
+    res.status(200).json({msg:"user created",role:req.body.role.toLowerCase()});
 });
 
 app.post("/login",async (req,res)=>{
@@ -64,18 +65,8 @@ app.post("/login",async (req,res)=>{
     }
 });
 
-app.put("/forget",(req,res)=>{
-
-});
-
-app.get("/bailif",(req,res)=>{
-    //for accessing the entire dataset
-});
-
-app.put("/bailiff",(req,res)=>{
-
-});
-
 app.listen(PORT,()=>{
     console.log(`Server is running at http://localhost:${PORT}`);
 });
+
+app.use("/user",user);

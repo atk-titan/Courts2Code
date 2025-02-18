@@ -50,7 +50,7 @@ const userSignin = async (data) =>{
                 { expiresIn: "1h" } // Token expiration time
             );
           
-            return { success: true, msg: "User verified successfully", jwtToken: token };
+            return { success: true, msg: "User verified successfully", jwtToken: token , role: user.role};
             
         }else{
             return { success: false, msg: "incorrect password" };
