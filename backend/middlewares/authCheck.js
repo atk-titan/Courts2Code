@@ -47,7 +47,7 @@ const userSignin = async (data) =>{
             const token = jwt.sign(
                 { id: user._id, role: user.role },
                 process.env.JWT_SECRET, // Use a secure secret key from environment variables
-                { expiresIn: "1h" } // Token expiration time
+                { expiresIn: "12h" } // Token expiration time
             );
           
             return { success: true, msg: "User verified successfully", jwtToken: token , role: user.role};

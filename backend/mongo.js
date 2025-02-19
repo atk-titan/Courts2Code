@@ -27,6 +27,26 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Define the case schema
+// Define the case schema with lawyer references for each party
+const caseSchema = new mongoose.Schema(
+  {
+    caseNumber: { type: String, required: true, unique: true },
+    title: { type: String, required: true },
+    description: { type: String },
+    parties: { type: [String], required: true }, // e.g., names or identifiers of the parties
+    lawyerId: { type: [mongoose.Schema.Types.ObjectId], ref: "Lawyer", required: true },
+    judge: { type: String, required: true },       // judge identifier (could be name or ID)
+    courtName: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["Open", "Closed", "Pending"],
+      default: "Pending",
+    }
+  },
+  { timestamps: true }
+);
+
 // Define the police schema
 const policeSchema = new mongoose.Schema(
   {
@@ -57,7 +77,7 @@ const judgeSchema = new mongoose.Schema(
     judgeId: { type: String, required: true, unique: true },
     courtName: { type: String, required: true },
     designation: { type: String, required: true },
-    validTill: { type: Date, required: true},
+    validTill: { type: Date, required: true },
     identityProof: { type: String, required: true }, // Path to the uploaded file
   },
   { timestamps: true }
@@ -69,8 +89,8 @@ const lawyerSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     barCertificate: { type: String, required: true }, // Path to the uploaded bar certificate file
     specialization: { type: String, required: true },
-    ongoingCases: { type: [String], default: [] , required: true },
-    validTill: { type: Date, required: true},
+    ongoingCases: { type: [mongoose.Schema.Types.ObjectId], ref: "Case", default: [], required: true },
+    validTill: { type: Date, required: true },
     identityProof: { type: String, required: true }, // Path to the uploaded file
   },
   { timestamps: true }
@@ -89,6 +109,7 @@ const forensicExpertSchema = new mongoose.Schema(
 
 // Create models for each schema
 const User = mongoose.model("User", userSchema);
+const Case = mongoose.model("Case", caseSchema);
 const Police = mongoose.model("Police", policeSchema);
 const Bailiff = mongoose.model("Bailiff", bailiffSchema);
 const Judge = mongoose.model("Judge", judgeSchema);
@@ -98,6 +119,7 @@ const ForensicExpert = mongoose.model("ForensicExpert", forensicExpertSchema);
 // Export all models
 module.exports = {
   User,
+  Case,
   Police,
   Bailiff,
   Judge,
