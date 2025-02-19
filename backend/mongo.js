@@ -31,7 +31,6 @@ const userSchema = new mongoose.Schema(
 // Define the case schema with lawyer references for each party
 const caseSchema = new mongoose.Schema(
   {
-    caseNumber: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     description: { type: String },
     parties: { type: [String], required: true }, // e.g., names or identifiers of the parties

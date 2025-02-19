@@ -1,5 +1,6 @@
 const express = require('express');
 const { User, Lawyer, Case } = require('../mongo');
+const { transfer } = require('./transfer');
 const { verifyJWT } = require('../middlewares/authCheck');
 const jwt = require('jsonwebtoken');
 const Web3 = require('web3');
@@ -14,6 +15,8 @@ const judicialDepositContract = new web3.eth.Contract(contractABI, contractAddre
 
 const lawyer = express.Router();
 lawyer.use(express.json());
+
+lawyer.use("/transfer",transfer);
 
 /**
  * GET /lawyer?caseId=<caseId>
@@ -79,21 +82,19 @@ lawyer.post('/', verifyJWT, async (req, res) => {
     }
 
     // Extract new case details from request body
-    const { caseNumber, title, description, parties, judge, courtName } = req.body;
-    if (!caseNumber || !title || !parties || !judge || !courtName) {
+    const { title, description, parties, judge, courtName } = req.body;
+    if (!title || !parties || !judge || !courtName) {
       return res.status(400).json({ msg: "Missing required fields" });
     }
 
     // Create a new Case document with status "Open"
     const newCase = await Case.create({
-      caseNumber,
       title,
       description,
       parties,
       lawyerId: [lawyerDoc._id], // assuming the lawyer represents one party; adjust as needed
       judge,
       courtName,
-      status: "Open"
     });
 
     // Add the new case to the lawyer's ongoingCases array and save
