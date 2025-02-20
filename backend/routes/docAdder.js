@@ -132,8 +132,38 @@ docAdder.post('/', upload.single('file'), verifyJWT, async (req, res) => {
   }
 });
 
-docAdder.get('/',verifyJWT,async (req,res)=>{
+docAdder.get('/', verifyJWT, async (req, res) => {
+  try {
+    const { caseId } = req.query;
+    if (!caseId) {
+      return res.status(400).json({ msg: "caseId is required" });
+    }
+    
+    const decoded = jwt.decode(req.headers.authorization);
+    if (decoded.role !== "judge") {
+      return res.status(403).json({ msg: "You don't have access. Only judges have access." });
+    }
 
+    // Retrieve content IDs from the smart contract.
+    const contentIds = await judicialDepositContract.methods.getContentIdsByCase(caseId).call();
+    
+    // For each content ID, fetch the file details from Pinata's gateway.
+    // We use Promise.all to wait for all asynchronous calls.
+    const files = await Promise.all(contentIds.map(async (cid) => {
+      try {
+        const data = await pinata.gateways.get(cid);
+        return { cid, data };
+      } catch (error) {
+        console.error(`Error fetching data for CID ${cid}:`, error);
+        return { cid, error: error.toString() };
+      }
+    }));
+
+    return res.status(200).json({ contentIds, files });
+  } catch (err) {
+    console.error("Server error:", err);
+    return res.status(500).json({ msg: "Server error", error: err.toString() });
+  }
 });
 
 module.exports = { docAdder };
