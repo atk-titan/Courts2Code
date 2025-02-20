@@ -2,10 +2,14 @@ const express = require('express');
 require("dotenv").config();
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
-const Web3 = require('web3');
-import { PinataSDK } from "pinata-web3";
-import { verifyJWT } from "../middlewares/authCheck";
+// We use require for modules consistently (not mixing import/require)
+const { PinataSDK } = require("pinata-web3");
+const { verifyJWT } = require("../middlewares/authCheck");
 const { Case, User } = require("../mongo");
+// Import the already instantiated contract from our shared module.
+const {judicialDepositContract} = require("../contract");
+
+const docAdder = express.Router();
 
 // Configure Multer to store files on disk in the 'uploads' directory
 const storage = multer.diskStorage({
@@ -17,14 +21,6 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage: storage });
-
-const docAdder = express.Router();
-
-// Set up Web3 and the JudicialDeposit contract instance
-const web3 = new Web3(process.env.WEB3_PROVIDER);
-const contractABI = require('../build/ABI.json'); // Adjust path to your ABI file
-const contractAddress = process.env.JUDICIAL_DEPOSIT_CONTRACT_ADDRESS;
-const judicialDepositContract = new web3.eth.Contract(contractABI, contractAddress);
 
 // Set up Pinata SDK
 const pinata = new PinataSDK({
@@ -115,7 +111,8 @@ docAdder.post('/', upload.single('file'), verifyJWT, async (req, res) => {
     // Send the transaction to record the IPFS hash on-chain.
     // The authorized account (from env) must be allowed to call the contract.
     const senderAddress = process.env.AUTHORIZED_ACCOUNT;
-    const gasEstimate = await judicialDepositContract.methods.addTransaction(...txParameters).estimateGas({ from: senderAddress });
+    const gasEstimate = await judicialDepositContract.methods.addTransaction(...txParameters)
+      .estimateGas({ from: senderAddress });
     const tx = await judicialDepositContract.methods.addTransaction(...txParameters).send({
       from: senderAddress,
       gas: gasEstimate + 10000, // add some buffer
@@ -148,7 +145,6 @@ docAdder.get('/', verifyJWT, async (req, res) => {
     const contentIds = await judicialDepositContract.methods.getContentIdsByCase(caseId).call();
     
     // For each content ID, fetch the file details from Pinata's gateway.
-    // We use Promise.all to wait for all asynchronous calls.
     const files = await Promise.all(contentIds.map(async (cid) => {
       try {
         const data = await pinata.gateways.get(cid);
