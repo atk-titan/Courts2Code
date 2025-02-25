@@ -18,6 +18,7 @@
     "mongoose": "^8.9.5",
     "multer": "^1.4.5-lts.1",
     "pinata-web3": "^0.5.4",
+    "razorpay": "^2.9.6",
     "web3": "^4.16.0"
   }
 }

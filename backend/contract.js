@@ -10,4 +10,4 @@ const contractAddress = process.env.JUDICIAL_DEPOSIT_CONTRACT_ADDRESS;
 
 const judicialDepositContract = new web3.eth.Contract(contractABI, contractAddress);
 
-module.exports = { judicialDepositContract };
+export { judicialDepositContract };
