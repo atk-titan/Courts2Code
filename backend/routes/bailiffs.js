@@ -2,6 +2,7 @@ const express = require('express');
 const { verifyJWT } = require('../middlewares/authCheck');
 const { Case, Lawyer, User } = require('../mongo');
 const { judicialDepositContract } = require("../contract");
+const jwt = require("jsonwebtoken");
 
 const bailiff = express.Router();
 
@@ -20,12 +21,14 @@ bailiff.get("/trans", verifyJWT, async (req, res) => {
     try {
       // Expect caseId as a query parameter
       const { caseId } = req.query;
-      if (!caseId) {
+      const caseDoc = await Case.findById(caseId);
+      if (!caseDoc) {
         return res.status(400).json({ msg: "caseId is required" });
       }
   
+      const token = req.headers.authorization;
       // Decode JWT to ensure the caller is a bailiff
-      const decoded = jwt.decode(req.headers.authorization);
+      const decoded = jwt.decode(token);
       if (decoded.role !== "bailiff") {
         return res.status(403).json({ msg: "Access restricted to bailiffs" });
       }
