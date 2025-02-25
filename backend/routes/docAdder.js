@@ -1,165 +1,206 @@
-const express = require('express');
-require("dotenv").config();
-const jwt = require('jsonwebtoken');
-const multer = require('multer');
-// We use require for modules consistently (not mixing import/require)
-const { PinataSDK } = require("pinata-web3");
-const { verifyJWT } = require("../middlewares/authCheck");
-const { Case, User } = require("../mongo");
-// Import the already instantiated contract from our shared module.
-const {judicialDepositContract} = require("../contract");
+import express from 'express';
+import dotenv from 'dotenv';
+dotenv.config();
+import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import fs from 'fs/promises';
+import path from 'path';
+import PinataSDK from '@pinata/sdk';
+import { verifyJWT } from "../middlewares/authCheck.js";
+import { Case, User } from "../mongo.js";
+import { judicialDepositContract } from "../contract.js";
 
 const docAdder = express.Router();
 
-// Configure Multer to store files on disk in the 'uploads' directory
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Make sure this folder exists
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  },
-});
-const upload = multer({ storage: storage });
-
-// Set up Pinata SDK
+// Initialize Pinata with proper credentials
 const pinata = new PinataSDK({
-  pinataJwt: process.env.PINATA_JWT,
-  pinataGateway: process.env.PINATA_GATEWAY,
+  pinataApiKey: process.env.PINATA_API_KEY,
+  pinataSecretApiKey: process.env.PINATA_SECRET_KEY
 });
 
-// Function to push a file to IPFS via Pinata using its file path
+// Configure Multer with auto-create upload directory
+const storage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    const uploadDir = 'uploads/';
+    await fs.mkdir(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+// Improved IPFS upload function with cleanup
 async function ipfsPushFile(filePath) {
   try {
-    const uploadResult = await pinata.upload.file(filePath);
-    console.log("IPFS Upload result:", uploadResult);
-    return uploadResult;
+    const readableStream = require('fs').createReadStream(filePath);
+    const options = {
+      pinataMetadata: {
+        name: path.basename(filePath)
+      }
+    };
+    
+    const { IpfsHash } = await pinata.pinFileToIPFS(readableStream, options);
+    await fs.unlink(filePath); // Remove temporary file
+    
+    return IpfsHash;
   } catch (error) {
-    console.error("Error uploading file to IPFS:", error);
+    console.error("IPFS Upload Error:", error);
     throw error;
   }
 }
-
-/**
- * POST /docAdder
- *  - Accepts a file via Multer (field name: 'file') and a caseId (in req.body).
- *  - Only verified users with role 'lawyer' or 'forensic_expert' can call this endpoint.
- *  - The file is uploaded to IPFS via Pinata.
- *  - The IPFS hash is recorded on-chain via the JudicialDeposit contract.
- *  - Other transaction parameters are fetched from MongoDB:
- *      - The case details are retrieved using caseId.
- *      - The lawyer’s details are taken from the verified user's document.
- */
-docAdder.post('/', upload.single('file'), verifyJWT, async (req, res) => {
+// Fixed middleware order and error handling
+docAdder.post('/', verifyJWT, upload.single('file'), async (req, res) => {
   try {
-    const authToken = req.headers.authorization;
-    const decoded = jwt.decode(authToken);
-    const role = decoded.role;
-    const id = decoded.id;
+    // Get user from JWT middleware
+    const { role, id } = req.user;
 
-    // Verify user status from MongoDB
-    const person = await User.findOne({ _id: id });
-    if (!person || person.status !== "Verified") {
-      return res.status(403).json({ msg: "User not verified" });
+    // Authorization check
+    if (!['lawyer', 'forensic_expert'].includes(role)) {
+      return res.status(403).json({ 
+        success: false,
+        msg: "Unauthorized role" 
+      });
     }
 
-    // Accept only caseId from the request body
+    // Validate input
     const { caseId } = req.body;
-    if (!caseId) {
-      return res.status(400).json({ msg: "caseId is required" });
+    if (!caseId || !req.file) {
+      return res.status(400).json({
+        success: false,
+        msg: "Missing required fields: caseId or file"
+      });
     }
 
-    // Retrieve case details from MongoDB
-    const caseDetails = await Case.findOne({ _id: caseId });
+    // Parallel database queries
+    const [user, caseDetails] = await Promise.all([
+      User.findById(id),
+      Case.findById(caseId)
+    ]);
+
+    if (!user || user.status !== "Verified") {
+      return res.status(403).json({
+        success: false,
+        msg: "User not verified or not found"
+      });
+    }
+
     if (!caseDetails) {
-      return res.status(404).json({ msg: "Case not found" });
+      return res.status(404).json({
+        success: false,
+        msg: "Case not found"
+      });
     }
 
-    // Only allow roles 'lawyer' or 'forensic_expert'
-    if (role !== 'lawyer' && role !== 'forensic_expert') {
-      return res.status(403).json({ msg: "Unauthorized role" });
-    }
+    // Upload to IPFS
+    const ipfsHash = await ipfsPushFile(req.file.path);
 
-    // Ensure a file was uploaded
-    if (!req.file) {
-      return res.status(400).json({ msg: "No file uploaded" });
-    }
-
-    // Upload the file to IPFS via Pinata using the file path (from diskStorage)
-    const uploadResult = await ipfsPushFile(req.file.path);
-    const fileHash = uploadResult.IpfsHash; // Assuming the result includes IpfsHash
-
-    // Prepare parameters for the smart contract call.
-    // For content addition (transactionType = false), we set amount to 0.
-    // We fetch judge and courtName from caseDetails, and assume parties are stored in caseDetails.parties array.
-    // For the 'from' field, we use the lawyer's identifier (e.g., email or name from the person document).
-    // The 'to' field is left as an empty string (or you can adjust if needed).
-    const txParameters = [
-      caseId,                                       // _caseID
-      caseDetails.judge,                            // _judgeId (from caseDetails)
-      caseDetails.courtName,                        // _courtName
-      caseDetails.parties[0] || "",                 // _party1 (first party in the array)
-      caseDetails.parties[1] || "",                 // _party2 (second party, if exists)
-      person.email || person.name,                  // _from (lawyer's identifier)
-      "",                                           // _to (empty string; adjust if needed)
-      0,                                            // _amount = 0 (content adding)
-      fileHash,                                     // _contentId (IPFS hash)
-      false,                                        // _transactionType: false for content adding
-      Math.floor(Date.now() / 1000)                 // _date: current timestamp in seconds (can be adjusted)
+    // Prepare contract parameters
+    const txParams = [
+      caseId.toString(),                  // string memory _caseID
+      caseDetails.judge || "",            // string memory _judgeId
+      caseDetails.courtName || "",        // string memory _courtName
+      caseDetails.parties[0] || "",       // string memory _party1
+      caseDetails.parties[1] || "",       // string memory _party2
+      user.email || user.name,            // string memory _from
+      "",                                 // string memory _to
+      0,                                  // uint256 _amount
+      ipfsHash,                           // string memory _contentId
+      false,                              // bool _transactionType
+      Math.floor(Date.now() / 1000)       // uint256 _date
     ];
 
-    // Send the transaction to record the IPFS hash on-chain.
-    // The authorized account (from env) must be allowed to call the contract.
+    // Send transaction with gas buffer
     const senderAddress = process.env.AUTHORIZED_ACCOUNT;
-    const gasEstimate = await judicialDepositContract.methods.addTransaction(...txParameters)
+    const gasEstimate = await judicialDepositContract.methods
+      .addTransaction(...txParams)
       .estimateGas({ from: senderAddress });
-    const tx = await judicialDepositContract.methods.addTransaction(...txParameters).send({
-      from: senderAddress,
-      gas: gasEstimate + 10000, // add some buffer
+
+    const tx = await judicialDepositContract.methods
+      .addTransaction(...txParams)
+      .send({
+        from: senderAddress,
+        gas: Math.floor(gasEstimate * 1.2) // 20% buffer
+      });
+
+    res.json({
+      success: true,
+      message: "Document added successfully",
+      ipfsHash,
+      txHash: tx.transactionHash
     });
 
-    return res.status(200).json({
-      msg: "File uploaded to IPFS and transaction recorded on ledger successfully",
-      ipfsData: uploadResult,
-      txData: tx,
+  } catch (error) {
+    console.error("Error in document addition:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
-  } catch (err) {
-    console.error("Server error:", err);
-    return res.status(500).json({ msg: "Server error", error: err.toString() });
   }
 });
 
+// Updated document retrieval endpoint
 docAdder.get('/', verifyJWT, async (req, res) => {
   try {
+    // Authorization check
+    if (req.user.role !== "judge") {
+      return res.status(403).json({
+        success: false,
+        msg: "Judge access required"
+      });
+    }
+
+    // Validate input
     const { caseId } = req.query;
     if (!caseId) {
-      return res.status(400).json({ msg: "caseId is required" });
-    }
-    
-    const decoded = jwt.decode(req.headers.authorization);
-    if (decoded.role !== "judge") {
-      return res.status(403).json({ msg: "You don't have access. Only judges have access." });
+      return res.status(400).json({
+        success: false,
+        msg: "caseId query parameter is required"
+      });
     }
 
-    // Retrieve content IDs from the smart contract.
-    const contentIds = await judicialDepositContract.methods.getContentIdsByCase(caseId).call();
-    
-    // For each content ID, fetch the file details from Pinata's gateway.
-    const files = await Promise.all(contentIds.map(async (cid) => {
-      try {
-        const data = await pinata.gateways.get(cid);
-        return { cid, data };
-      } catch (error) {
-        console.error(`Error fetching data for CID ${cid}:`, error);
-        return { cid, error: error.toString() };
-      }
-    }));
+    // Get content IDs from blockchain
+    const contentIds = await judicialDepositContract.methods
+      .getContentIdsByCase(caseId)
+      .call();
 
-    return res.status(200).json({ contentIds, files });
-  } catch (err) {
-    console.error("Server error:", err);
-    return res.status(500).json({ msg: "Server error", error: err.toString() });
+    // Get metadata for all files
+    const files = await Promise.all(
+      contentIds.map(async (cid) => {
+        try {
+          const metadata = await pinata.getMetadataByHash(cid);
+          return {
+            cid,
+            name: metadata.metadata.name,
+            timestamp: new Date(metadata.metadata.date)
+          };
+        } catch (error) {
+          console.error(`Error fetching metadata for ${cid}:`, error);
+          return null;
+        }
+      })
+    );
+
+    res.json({
+      success: true,
+      caseId,
+      count: contentIds.length,
+      files: files.filter(file => file !== null)
+    });
+
+  } catch (error) {
+    console.error("Error in document retrieval:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
   }
 });
 
-module.exports = { docAdder };
+export { docAdder };
