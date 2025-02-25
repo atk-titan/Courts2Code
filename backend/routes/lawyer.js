@@ -68,15 +68,20 @@ lawyer.get('/', verifyJWT, async (req, res) => {
  *   - courtName (string)
  */
 lawyer.post('/', verifyJWT, async (req, res) => {
+
   try {
     const authToken = req.headers.authorization;
+    // console.log(authToken);
     const decoded = jwt.decode(authToken);
     const id = decoded.id;
+    console.log(id)
 
     // Retrieve user and lawyer documents from MongoDB
     const user = await User.findOne({ _id: id });
     const lawyerDoc = await Lawyer.findOne({ userId: id });
-
+    console.log(user)
+    console.log(user)
+    console.log("hello")
     if (!user || user.status !== "Verified") {
       return res.status(403).json({ msg: "User not verified" });
     }
