@@ -26,18 +26,10 @@ bailiff.get("/trans", verifyJWT, async (req, res) => {
       if (!caseDoc) {
         return res.status(400).json({ msg: "caseId is required" });
       }
-      
+  
       const token = req.headers.authorization;
-
-      console.log("\n\n\n\n");
-      console.log(token);
-      console.log("\n\n\n\n");
-
       // Decode JWT to ensure the caller is a bailiff
       const decoded = jwt.decode(token);
-      console.log("\n\n\n\n");
-      console.log(decoded);
-      console.log("\n\n\n\n");
       if (decoded.role !== "bailiff") {
         return res.status(403).json({ msg: "Access restricted to bailiffs" });
       }
