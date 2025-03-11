@@ -2,12 +2,14 @@ const express = require( 'express' );
 const {SignupValidation , SigninValidation} = require('./middlewares/inputValidation'); // Adjust path as needed
 const { createUser , userSignin , verifyJWT } = require('./middlewares/authCheck');
 const { user } = require('./routes/user');
+const cors = require('cors')
 
 const PORT=3000;
 
 const app = express();
 
 app.use(express.json());
+app.use(cors());
 
 const validateInput= async (req,res,next)=>{
     // roleDetails: {

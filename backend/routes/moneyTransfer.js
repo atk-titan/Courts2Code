@@ -13,8 +13,8 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
-// 🟢 Step 1: Create a Razorpay Order and Store Transaction on Blockchain
-money.post('/', verifyJWT, async (req, res) => {
+// Create a Razorpay Order and Store Transaction on Blockchain
+money.get('/orderID', verifyJWT, async (req, res) => {
     try {
         const authToken = req.headers.authorization;
         const decoded = jwt.decode(authToken);
@@ -53,44 +53,55 @@ money.post('/', verifyJWT, async (req, res) => {
 
         const order = await razorpay.orders.create(options);
 
-        console.log(order);
-        // Blockchain transaction details
-        const txParameters = [
-            caseId,                                       // _caseID
-            caseDetails.judge,                            // _judgeId
-            caseDetails.courtName,                        // _courtName
-            caseDetails.parties[0] || "",                 // _party1
-            caseDetails.parties[1] || "",                 // _party2
-            user.email || user.name,         // _from (lawyer identifier)
-            caseDetails.judge,                            // _to (assuming money goes to the court)
-            amount,                                       // _amount (actual amount from Razorpay)
-            "",                                           // _contentId (empty for money transactions)
-            true,                                         // _transactionType: true for money transfer
-            Math.floor(Date.now() / 1000)                 // _date (current timestamp)
-        ];
-        console.log(txParameters);
-
-        // Send transaction to blockchain
-        const senderAddress = process.env.AUTHORIZED_ACCOUNT;
-        const gasEstimate = await judicialDepositContract.methods
-            .addTransaction(...txParameters)
-            .estimateGas({ from: senderAddress });
-
-        const tx = await judicialDepositContract.methods.addTransaction(...txParameters).send({
-            from: senderAddress,
-            gas: gasEstimate + 10000, // Add buffer
-        });
-
         res.status(200).json({
-            msg: "Transaction successful, recorded on blockchain",
+            msg: "Order created, successfully",
             order,
-            txData: tx
+            order_id: order.id
         });
 
     } catch (err) {
         console.error(err);
-        res.status(500).json({ msg: "Something went wrong" });
+        res.status(500).json({
+            msg: "Something went wrong while creating order",
+            err
+        });
     }
 });
 
 module.exports = { money };
+       
+       
+       
+       
+       
+       
+       
+       
+       
+        // console.log(order);
+        // // Blockchain transaction details
+        // const txParameters = [
+        //     caseId,                                       // _caseID
+        //     caseDetails.judge,                            // _judgeId
+        //     caseDetails.courtName,                        // _courtName
+        //     caseDetails.parties[0] || "",                 // _party1
+        //     caseDetails.parties[1] || "",                 // _party2
+        //     user.email || user.name,         // _from (lawyer identifier)
+        //     caseDetails.judge,                            // _to (assuming money goes to the court)
+        //     amount,                                       // _amount (actual amount from Razorpay)
+        //     "",                                           // _contentId (empty for money transactions)
+        //     true,                                         // _transactionType: true for money transfer
+        //     Math.floor(Date.now() / 1000)                 // _date (current timestamp)
+        // ];
+        // console.log(txParameters);
+
+        // // Send transaction to blockchain
+        // const senderAddress = process.env.AUTHORIZED_ACCOUNT;
+        // const gasEstimate = await judicialDepositContract.methods
+        //     .addTransaction(...txParameters)
+        //     .estimateGas({ from: senderAddress });
+
+        // const tx = await judicialDepositContract.methods.addTransaction(...txParameters).send({
+        //     from: senderAddress,
+        //     gas: gasEstimate + 10000, // Add buffer
+        // });
