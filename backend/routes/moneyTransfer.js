@@ -25,7 +25,8 @@ money.get('/orderID', verifyJWT, async (req, res) => {
             return res.status(401).json({ msg: "You are not authorized to do this operation" });
         }
 
-        const { caseId, amount } = req.body;
+        const caseId =req.query.caseId;
+        const amount = req.query.amount;
 
         const lawyerDets = await Lawyer.findOne({ userId: id });
         console.log(lawyerDets);
