@@ -43,7 +43,7 @@ function App() {
   return (
     <>
       <input type="text" onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount" />
-      <button onClick={()=>payNow("")}>Pay Now</button>
+      <button onClick={()=>payNow("67bc80946c6bfa02cb8913bc")}>Pay Now</button>
     </>
   );
 }
