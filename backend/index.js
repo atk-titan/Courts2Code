@@ -30,14 +30,16 @@ const validateInput= async (req,res,next)=>{
     };
     const valid = SignupValidation(signupInput);
     if(valid.success){
-        try{
+        try {
             const user = await createUser(signupInput);
-            if(user.success){
-                next();
+            if (user.success) {
+                return next(); // Ensure next() is called and execution stops
             }
             console.log(user.msg);
-        }catch(err){
-            console.log(""+err);
+            return res.status(400).json({ error: user.msg }); // Send error response if user creation fails
+        } catch (err) {
+            console.error("Error during user creation:", err);
+            return res.status(500).json({ error: "Internal Server Error" }); // Send proper error response
         }
     }else{
         res.status(403).json(valid.msg);
@@ -46,7 +48,7 @@ const validateInput= async (req,res,next)=>{
 }
 
 app.post("/register",validateInput,(req,res)=>{
-    res.status(200).json({msg:"user created",role:req.body.role.toLowerCase()});
+    res.status(200).json({msg:"user created",role:req.body.user.role.toLowerCase()});
 });
 
 app.post("/login",async (req,res)=>{
