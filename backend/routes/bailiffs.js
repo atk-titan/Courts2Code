@@ -6,11 +6,49 @@ const jwt = require('jsonwebtoken');
 
 const bailiff = express.Router();
 
+// const data = [
+//   {
+//     caseNumber: "2025-CIV-001",
+//     title: "Smith vs. Johnson",
+//     description: "A civil dispute over property ownership.",
+//     parties: ["John Smith", "Michael Johnson"],
+//     judge: "Judge Emily Carter",
+//     courtName: "New York Civil Court",
+//     _id: "cd123456", // Add _id if your frontend expects it
+//     status: "Pending"
+//   },
+//   {
+//     caseNumber: "2025-CIV-001",
+//     title: "Smith vs. Johnson",
+//     description: "A civil dispute over property ownership.",
+//     parties: ["John Smith", "Michael Johnson"],
+//     judge: "Judge Emily Carter",
+//     courtName: "New York Civil Court",
+//     _id: "cd1456", // Add _id if your frontend expects it
+//     status: "Pending"
+//   },
+//   {
+//     caseNumber: "2025-CIV-001",
+//     title: "Smith vs. Johnson",
+//     description: "A civil dispute over property ownership.",
+//     parties: ["John Smith", "Michael Johnson"],
+//     judge: "Judge Emily Carter",
+//     courtName: "New York Civil Court",
+//     _id: "cd1896", // Add _id if your frontend expects it
+//     status: "Pending"
+//   }
+// ];
+
+
 // GET pending cases
 bailiff.get("/case", verifyJWT, async (req, res) => {
   try {
-    const pendingCases = await Case.find({ status: "Pending" });
+    
+    const pendingCases = await Case.find({ status: "Open" });
+    // console.log(pendingCases);
     return res.status(200).json({ pendingCases });
+    // dummy data for the testing
+    // return res.status(200).json({ pendingCases: data }); 
   } catch (err) {
     console.error(err);
     return res.status(500).json({ msg: "Server error" });
@@ -20,13 +58,12 @@ bailiff.get("/case", verifyJWT, async (req, res) => {
 bailiff.get("/trans", verifyJWT, async (req, res) => {
     try {
       // Expect caseId as a query parameter
-      console.log(req.query)
       const { caseId } = req.query;
       const caseDoc = await Case.findById(caseId);
-      if (!caseDoc) {
+      if (!caseId) {
         return res.status(400).json({ msg: "caseId is required" });
       }
-  
+
       const token = req.headers.authorization;
       // Decode JWT to ensure the caller is a bailiff
       const decoded = jwt.decode(token);
@@ -42,6 +79,7 @@ bailiff.get("/trans", verifyJWT, async (req, res) => {
       console.error("Server error:", err);
       return res.status(500).json({ msg: "Server error", error: err.toString() });
     }
+
 }); 
 
 // Change lawyer for a case

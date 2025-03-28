@@ -31,8 +31,10 @@ lawyer.get('/', verifyJWT, async (req, res) => {
     // Retrieve user and lawyer documents from MongoDB
     const user = await User.findOne({ _id: id });
     const lawyerDoc = await Lawyer.findOne({ userId: id });
+    // console.log(user);
+    // console.log(lawyerDoc);
 
-    if (!user || user.status !== "Verified") {
+    if (!user || user.status == true) {
       return res.status(403).json({ msg: "User not verified" });
     }
 
@@ -49,7 +51,11 @@ lawyer.get('/', verifyJWT, async (req, res) => {
 
     // Call the JudicialDeposit contract to get money transactions for the given case
     const moneyTransactions = await judicialDepositContract.methods.getMoneyTransactions(caseId).call();
+
+    // console.log( moneyTransactions);
     return res.status(200).json({ moneyTransactions });
+
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ msg: "Server error" });
@@ -79,9 +85,9 @@ lawyer.post('/', verifyJWT, async (req, res) => {
     // Retrieve user and lawyer documents from MongoDB
     const user = await User.findOne({ _id: id });
     const lawyerDoc = await Lawyer.findOne({ userId: id });
-    console.log(user)
-    console.log(user)
-    console.log("hello")
+    // console.log(user)
+    // console.log(user)
+    // console.log("hello")
     if (!user || user.status !== "Verified") {
       return res.status(403).json({ msg: "User not verified" });
     }

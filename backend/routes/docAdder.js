@@ -2,7 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
 import jwt from 'jsonwebtoken';
-import multer from 'multer';
 import fs from 'fs/promises';
 import path from 'path';
 import PinataSDK from '@pinata/sdk';
@@ -16,23 +15,6 @@ const docAdder = express.Router();
 const pinata = new PinataSDK({
   pinataApiKey: process.env.PINATA_API_KEY,
   pinataSecretApiKey: process.env.PINATA_SECRET_KEY
-});
-
-// Configure Multer with auto-create upload directory
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const uploadDir = 'uploads/';
-    await fs.mkdir(uploadDir, { recursive: true });
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
 // Improved IPFS upload function with cleanup
@@ -55,10 +37,11 @@ async function ipfsPushFile(filePath) {
   }
 }
 // Fixed middleware order and error handling
-docAdder.post('/', verifyJWT, upload.single('file'), async (req, res) => {
+docAdder.post('/', verifyJWT, async (req, res) => {
   try {
     // Get user from JWT middleware
     const { role, id } = req.user;
+    const ipfsHash = req.body.cid;
 
     // Authorization check
     if (!['lawyer', 'forensic_expert'].includes(role)) {
@@ -96,9 +79,6 @@ docAdder.post('/', verifyJWT, upload.single('file'), async (req, res) => {
         msg: "Case not found"
       });
     }
-
-    // Upload to IPFS
-    const ipfsHash = await ipfsPushFile(req.file.path);
 
     // Prepare contract parameters
     const txParams = [

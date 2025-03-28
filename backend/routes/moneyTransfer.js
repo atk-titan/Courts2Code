@@ -117,6 +117,8 @@ money.post('/addTransaction', verifyJWT, async (req, res) => {
             Math.floor(Date.now() / 1000) // _date (current timestamp)
         ];
 
+        console.log(txParameters);
+
         const senderAddress = process.env.AUTHORIZED_ACCOUNT;
         const gasEstimate = await judicialDepositContract.methods
             .addTransaction(...txParameters)
