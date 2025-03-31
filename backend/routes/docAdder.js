@@ -1,10 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
-import jwt from 'jsonwebtoken';
-import fs from 'fs/promises';
-import path from 'path';
-import PinataSDK from '@pinata/sdk';
 import { verifyJWT } from "../middlewares/authCheck.js";
 import { Case, User } from "../mongo.js";
 import { judicialDepositContract } from "../contract.js";
