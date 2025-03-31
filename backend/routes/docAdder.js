@@ -11,31 +11,6 @@ import { judicialDepositContract } from "../contract.js";
 
 const docAdder = express.Router();
 
-// Initialize Pinata with proper credentials
-const pinata = new PinataSDK({
-  pinataApiKey: process.env.PINATA_API_KEY,
-  pinataSecretApiKey: process.env.PINATA_SECRET_KEY
-});
-
-// Improved IPFS upload function with cleanup
-async function ipfsPushFile(filePath) {
-  try {
-    const readableStream = require('fs').createReadStream(filePath);
-    const options = {
-      pinataMetadata: {
-        name: path.basename(filePath)
-      }
-    };
-    
-    const { IpfsHash } = await pinata.pinFileToIPFS(readableStream, options);
-    await fs.unlink(filePath); // Remove temporary file
-    
-    return IpfsHash;
-  } catch (error) {
-    console.error("IPFS Upload Error:", error);
-    throw error;
-  }
-}
 // Fixed middleware order and error handling
 docAdder.post('/', verifyJWT, async (req, res) => {
   try {
@@ -129,10 +104,10 @@ docAdder.post('/', verifyJWT, async (req, res) => {
 docAdder.get('/', verifyJWT, async (req, res) => {
   try {
     // Authorization check
-    if (req.user.role !== "judge") {
+    if (req.user.role !== "judge" && req.user.role !== "bailiff") {
       return res.status(403).json({
         success: false,
-        msg: "Judge access required"
+        msg: "Judge/bailiff access required"
       });
     }
 
@@ -150,28 +125,12 @@ docAdder.get('/', verifyJWT, async (req, res) => {
       .getContentIdsByCase(caseId)
       .call();
 
-    // Get metadata for all files
-    const files = await Promise.all(
-      contentIds.map(async (cid) => {
-        try {
-          const metadata = await pinata.getMetadataByHash(cid);
-          return {
-            cid,
-            name: metadata.metadata.name,
-            timestamp: new Date(metadata.metadata.date)
-          };
-        } catch (error) {
-          console.error(`Error fetching metadata for ${cid}:`, error);
-          return null;
-        }
-      })
-    );
 
     res.json({
       success: true,
       caseId,
       count: contentIds.length,
-      files: files.filter(file => file !== null)
+      cids: contentIds
     });
 
   } catch (error) {
