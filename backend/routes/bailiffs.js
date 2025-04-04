@@ -44,7 +44,7 @@ const bailiff = express.Router();
 bailiff.get("/case", verifyJWT, async (req, res) => {
   try {
     
-    const pendingCases = await Case.find({ status: "Open" });
+    const pendingCases = await Case.find({ status: "Pending" });
     // console.log(pendingCases);
     return res.status(200).json({ pendingCases });
     // dummy data for the testing

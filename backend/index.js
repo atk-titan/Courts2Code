@@ -48,6 +48,7 @@ const validateInput= async (req,res,next)=>{
 }
 
 app.post("/register",validateInput,(req,res)=>{
+ 
     res.status(200).json({msg:"user created",role:req.body.user.role.toLowerCase()});
 });
 

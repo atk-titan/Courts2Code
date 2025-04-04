@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.1",
     "multer": "^1.4.5-lts.1",
+    "nodemon": "^3.1.9",
     "pinata-web3": "^0.5.4",
     "razorpay": "^2.9.6",
     "web3": "^1.9.0",

@@ -88,7 +88,8 @@ lawyer.post('/', verifyJWT, async (req, res) => {
     // console.log(user)
     // console.log(user)
     // console.log("hello")
-    if (!user || user.status !== "Verified") {
+
+    if (!user || user.status == true) {
       return res.status(403).json({ msg: "User not verified" });
     }
 
@@ -111,6 +112,7 @@ lawyer.post('/', verifyJWT, async (req, res) => {
     // Add the new case to the lawyer's ongoingCases array and save
     lawyerDoc.ongoingCases.push(newCase._id);
     await lawyerDoc.save();
+    console.log(newCase._id)
 
     return res.status(201).json({ msg: "Case filed successfully", case: newCase });
   } catch (err) {
