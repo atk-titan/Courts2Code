@@ -183,4 +183,19 @@ bailiff.put("/closeCase", verifyJWT, async (req, res) => {
   }
 });
 
+//close case dropdown
+bailiff.get("/openCaseDetails", verifyJWT, async (req, res) => {
+  try {
+    
+    const pendingCases = await Case.find({ status: "Open" });
+    // console.log(pendingCases);
+    return res.status(200).json({ pendingCases });
+    // dummy data for the testing
+    // return res.status(200).json({ pendingCases: data }); 
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Server error" });
+  }
+});
+
 module.exports = { bailiff }; 
