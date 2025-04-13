@@ -65,7 +65,8 @@ const userSignin = async (data) =>{
 
 const verifyJWT =(req,res,next)=>{
     try {
-        jwt.verify(req.headers.authorization,process.env.JWT_SECRET);
+        decoded = jwt.verify(req.headers.authorization,process.env.JWT_SECRET);
+        req.user = decoded;
         next();
     } catch (error) {
         console.error("error while finding the user"+error);

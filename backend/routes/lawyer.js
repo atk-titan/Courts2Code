@@ -121,4 +121,41 @@ lawyer.post('/', verifyJWT, async (req, res) => {
   }
 });
 
+// this is the expected output of the route
+// {
+//   "ongoingCases": [
+//     {
+//       "_id": "123abc",
+//       "title": "Land Dispute",
+//       "parties": ["A", "B"],
+//       "judge": "Judge Judy",
+//       "courtName": "Mumbai High Court"
+//     },
+//     ...
+//   ]
+// }
+lawyer.get('/cases', verifyJWT , async (req,res)=>{
+  try{
+    const authToken = req.headers.authorization;
+    const decoded = jwt.decode(authToken);
+    const id = decoded.id;
+
+    const lawyer = await Lawyer.findOne({userId:id});
+
+    if(!lawyer){
+      res.status(404).json({msg:"lawyer not found"});
+      console.log("lawyer not found");
+    }
+
+    // Populate case details if you want to return full data instead of just IDs
+    const ongoingCases = await Case.find({ _id: { $in: lawyer.ongoingCases } });
+
+    res.status(200).json({ongoingCases});
+
+  }catch(err){
+    console.log(err);
+    res.status(500).json({msg:err});
+  }
+});
+
 module.exports = { lawyer };

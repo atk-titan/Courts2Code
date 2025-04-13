@@ -198,4 +198,28 @@ bailiff.get("/openCaseDetails", verifyJWT, async (req, res) => {
   }
 });
 
+bailiff.get("/barCertificate",verifyJWT,async (req,res)=>{
+  try{
+    const {id, role} = req.user;
+
+    if(!id){
+      console.log("no id from authorization header. check verifyJWT");
+      res.status(500).json({msg:"no id from authorization header. Check verifyJWT"});
+    }
+
+    const lawyer = await Lawyer.findOne({userId:id});
+
+    if(!lawyer){
+      res.status(404).json({msg:"lawyer not found, maybe the id is wrong"});
+      console.log("lawyer not found, maybe the id is wrong");
+    }
+
+    res.status(200).json({barCid:lawyer.barCertificate , identityProof: lawyer.identityProof});
+    
+  }catch(err){
+    console.log(err);
+    res.status(500).json({msg:err});
+  }
+});
+
 module.exports = { bailiff }; 
