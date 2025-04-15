@@ -222,4 +222,62 @@ bailiff.get("/barCertificate",verifyJWT,async (req,res)=>{
   }
 });
 
+//get all unverified lawyer for verifying them.
+// {
+//   "pendingLawyers": [
+//     {
+//       "_id": "123abc",
+//       "name": "Adv. Rakesh",
+//       "email": "rakesh@example.com",
+//       "phone": "9876543210",
+//       "status": "Pending",
+//       "barCertificateCID": "bafkreigx...",
+//       "identityProofCID": "bafkreiop..."
+//     },
+//     ...
+//   ]
+// }
+bailiff.get("/lawyers", verifyJWT, async (req, res) => {
+  try {
+    const { id, role } = req.user;
+
+    if (!id) {
+      return res.status(404).json({ msg: "ID not received" });
+    }
+
+    const users = await User.find({ role: "lawyer", status: "Pending" });
+
+    if (!users || users.length === 0) {
+      return res.status(200).json({ msg: "No pending lawyers found" });
+    }
+
+    const userIds = users.map((user) => user._id);
+    const lawyers = await Lawyer.find({ userId: { $in: userIds } });
+
+    // Create a map for quick lookup
+    const lawyerMap = new Map();
+    lawyers.forEach((lawyer) => {
+      lawyerMap.set(lawyer.userId.toString(), {
+        barCertificateCID: lawyer.barCertificate,
+        identityProofCID: lawyer.identityProof,
+      });
+    });
+
+    // Merge user and lawyer info
+    const mergedData = users.map((user) => ({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      status: user.status,
+      ...lawyerMap.get(user._id.toString()) // merge CID details
+    }));
+
+    res.status(200).json({ pendingLawyers: mergedData });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ msg: "Server Error", error: err });
+  }
+});
+
 module.exports = { bailiff }; 
