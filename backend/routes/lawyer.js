@@ -99,21 +99,21 @@ lawyer.post('/', verifyJWT, async (req, res) => {
       return res.status(400).json({ msg: "Missing required fields" });
     }
 
-    const partyNames = await Promise.all(
-      parties.map(async (party) => {
-        const l = await User.findOne({ email: party });
-        if(!l || l.status!=="Verified"){
-          throw new Error(`Invalid or unverified party: ${party}`);
-        }
-        return l.name; 
-      })
-    );    
+    // const partyNames = await Promise.all(
+    //   parties.map(async (party) => {
+    //     const l = await User.findOne({ email: party });
+    //     if(!l || l.status!=="Verified"){
+    //       throw new Error(`Invalid or unverified party: ${party}`);
+    //     }
+    //     return l.name; 
+    //   })
+    // );    
 
     // Create a new Case document with status "Open"
     const newCase = await Case.create({
       title,
       description,
-      partyNames,
+      parties,
       lawyerId: [lawyerDoc._id], // assuming the lawyer represents one party; adjust as needed
       judge,
       courtName,
